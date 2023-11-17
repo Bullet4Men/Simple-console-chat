@@ -141,6 +141,7 @@ private:
     chat_room room_;
 };
 
+
 int main(int argc, char* argv[]) {
     try {
         if (argc < 2) {
@@ -149,6 +150,7 @@ int main(int argc, char* argv[]) {
         }
 
         boost::asio::io_context context;
+        boost::asio::thread_pool pool(std::thread::hardware_concurrency());
 
         std::list<chat_server> servers;
         for (int i = 1; i < argc; ++i) {
@@ -156,7 +158,8 @@ int main(int argc, char* argv[]) {
             servers.emplace_back(context, endpoint);
         }
 
-        context.run();
+        boost::asio::post(pool, [&](){ context.run(); });
+        pool.join();
     } catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }

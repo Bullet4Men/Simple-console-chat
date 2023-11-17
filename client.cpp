@@ -105,13 +105,14 @@ int main(int argc, char* argv[]) {
 
         std::string nickname = argv[3];
 
-        boost::asio::io_context io_context;
+        boost::asio::io_context context;
+        boost::asio::thread_pool pool(std::thread::hardware_concurrency());
 
-        tcp::resolver resolver(io_context);
+        tcp::resolver resolver(context);
         auto endpoints = resolver.resolve(argv[1], argv[2]);
-        client client(io_context, endpoints);
+        client client(context, endpoints);
 
-        std::thread t([&io_context](){ io_context.run(); });
+        boost::asio::post(pool, [&](){ context.run(); });
 
         char line[message::max_body_length + 1];
         while (std::cin.getline(line, message::max_body_length + 1)) {
@@ -131,7 +132,7 @@ int main(int argc, char* argv[]) {
         }
 
         client.close();
-        t.join();
+        pool.join();
     } catch (std::exception& e) {
         std::cerr << e.what() << "\n";
     }
